@@ -176,50 +176,6 @@ class TypedModelMetaclass(ModelBase):
                         and superclass not in (cls, base_class)
                         and hasattr(superclass, '_typedmodels_type')):
                     superclass._typedmodels_subtypes.append(typ)
-
-            # Overriding _fill_fields_cache and _fill_m2m_cache functions in Meta.
-            # This is done by overriding method for specific instance of
-            # django.db.models.options.Options class, which generally should
-            # be avoided, but in this case it may be better than monkey patching
-            # Options or copy-pasting large parts of Django code.
-
-            def _fill_fields_cache(self):
-                cache = []
-                for parent in self.parents:
-                    for field, model in parent._meta.get_fields_with_model():
-                        if field in base_class._meta.original._meta.fields or any(field in ancestor._meta.declared_fields.values() for ancestor in cls.mro() if issubclass(ancestor, base_class) and not ancestor==base_class):
-                            if model:
-                                cache.append((field, model))
-                            else:
-                                cache.append((field, parent))
-                self._field_cache = tuple(cache)
-                self._field_name_cache = [x for x, _ in cache]
-            cls._meta._fill_fields_cache = types.MethodType(_fill_fields_cache, cls._meta)
-            if hasattr(cls._meta, '_field_name_cache'):
-                del cls._meta._field_name_cache
-            if hasattr(cls._meta, '_field_cache'):
-                del cls._meta._field_cache
-            cls._meta._fill_fields_cache()
-            # Flush “fields” property cache created using cached_property, introduced in commit 9777442 in Django.
-            if 'fields' in cls._meta.__dict__:
-                del cls._meta.__dict__['fields']
-
-            def _fill_m2m_cache(self):
-                cache = OrderedDict()
-                for parent in self.parents:
-                    for field, model in parent._meta.get_m2m_with_model():
-                        if field in base_class._meta.original._meta.many_to_many or any(field in ancestor._meta.declared_fields.values() for ancestor in cls.mro() if issubclass(ancestor, base_class) and not ancestor==base_class):
-                            if model:
-                                cache[field] = model
-                            else:
-                                cache[field] = parent
-                for field in self.local_many_to_many:
-                    cache[field] = None
-                self._m2m_cache = cache
-            cls._meta._fill_m2m_cache = types.MethodType(_fill_m2m_cache, cls._meta)
-            if hasattr(cls._meta, '_m2m_cache'):
-                del cls._meta._m2m_cache
-            cls._meta._fill_m2m_cache()
         else:
             # this is the base class
             cls._typedmodels_registry = {}
