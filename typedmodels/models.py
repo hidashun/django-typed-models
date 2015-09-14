@@ -17,9 +17,7 @@ if sys.version_info < (2, 7):
     # OrderedDict is new in 2.7, but django < 1.7 provides this similar thing
     from django.utils.datastructures import SortedDict as OrderedDict
 else:
-    from collections import OrderedDict
-
-
+    from collections import OrderedDict  # NOQA
 
 
 class TypedModelManager(models.Manager):
@@ -80,7 +78,7 @@ class TypedModelMetaclass(ModelBase):
             if not hasattr(base_class._meta, 'original'):
                 class original_meta:
                     proxy = True
-                Original = super(TypedModelMetaclass, meta).__new__(meta, base_class.__name__+'Original', (base_class,), {'Meta': original_meta, '__module__': base_class.__module__})
+                Original = super(TypedModelMetaclass, meta).__new__(meta, base_class.__name__ + 'Original', (base_class,), {'Meta': original_meta, '__module__': base_class.__module__})
                 base_class._meta.original = Original
                 # Fill m2m cache for original class now, so it doesn't contain fields from child classes.
                 base_class._meta.original._meta.many_to_many
@@ -107,6 +105,7 @@ class TypedModelMetaclass(ModelBase):
                     # changing _meta.[object_name,module_name,model_name], so accessor names are generated properly.
                     # We'll do more stuff when the class is created.
                     old_do_related_class = field.do_related_class
+
                     def do_related_class(self, other, cls):
                         base_class_name = base_class.__name__
                         # model_name was introduced in commit ec469ad in Django.
@@ -172,9 +171,9 @@ class TypedModelMetaclass(ModelBase):
             # look for any other proxy superclasses, they'll need to know
             # about this subclass
             for superclass in cls.mro():
-                if (issubclass(superclass, base_class)
-                        and superclass not in (cls, base_class)
-                        and hasattr(superclass, '_typedmodels_type')):
+                if (issubclass(superclass, base_class) and
+                        superclass not in (cls, base_class) and
+                        hasattr(superclass, '_typedmodels_type')):
                     superclass._typedmodels_subtypes.append(typ)
         else:
             # this is the base class
@@ -340,6 +339,8 @@ class TypedModel(with_metaclass(TypedModelMetaclass, models.Model)):
 # This should be preferably done by changing __unicode__ method for ._meta attribute in each model,
 # but it doesn’t work.
 _python_serializer_get_dump_object = _PythonSerializer.get_dump_object
+
+
 def _get_dump_object(self, obj):
     if isinstance(obj, TypedModel):
         return {
@@ -349,16 +350,21 @@ def _get_dump_object(self, obj):
         }
     else:
         return _python_serializer_get_dump_object(self, obj)
+
+
 _PythonSerializer.get_dump_object = _get_dump_object
 
+
 _xml_serializer_start_object = _XmlSerializer.start_object
+
+
 def _start_object(self, obj):
     if isinstance(obj, TypedModel):
         self.indent(1)
         obj_pk = obj._get_pk_val()
         modelname = smart_text(getattr(obj, 'base_class', obj)._meta)
         if obj_pk is None:
-            attrs = {"model": modelname,}
+            attrs = {"model": modelname, }
         else:
             attrs = {
                 "pk": smart_text(obj._get_pk_val()),

@@ -50,7 +50,7 @@ class AngryBigCat(BigCat):
     """
     canines_eaten = models.ManyToManyField(
         Canine
-        )
+    )
 
     def say_something(self):
         return "raawr"

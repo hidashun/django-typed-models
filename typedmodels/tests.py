@@ -1,6 +1,6 @@
 from django.utils import unittest
 try:
-    import yaml
+    import yaml  # NOQA
     PYYAML_AVAILABLE = True
 except ImportError:
     PYYAML_AVAILABLE = False
